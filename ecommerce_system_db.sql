@@ -1,0 +1,16 @@
+CREATE DATABASE ECOM; -- create database
+USE ECOM; -- using the database
+
+--  creating tables
+-- customers
+CREATE TABLE CUSTOMER(
+CUST_ID varchar(255),
+FIRST_NAME varchar(250),
+LAST_NAME VARCHAR(255),
+EMAIL varchar(250),
+GENDER ENUM("MALE","FEMALE","OTHERS"),
+PHONE varchar(10), 
+ANNUAL_INCOME DECIMAL(10,2));
+SELECT * FROM CUSTOMER;
+
+DESCRIBE CUSTOMER;
