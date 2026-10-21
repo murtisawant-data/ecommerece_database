@@ -421,7 +421,95 @@ select cust_id,payment_status
 from payment
 join orders
 on payment.order_id=orders.order_id
-where payment_status="pending";
+where 
+payment_status="pending";
 
--- 38)
+-- 38)Find customers with annual income greater than the average annual income of all customers.
+select *from customer
+where annual_income>(select avg(annual_income)from customer);
 
+-- 39)identify th top three customer based on total sales
+select concat (coalesce(first_name,"")," ",coalesce(last_name,""))as full_name,
+sum(sales)as total_sales
+from customer c
+join sales s
+on c.cust_id=s.customer_id
+group by full_name
+order by total_sales desc limit 3;
+
+-- 40)find customer who purchase products from more  than one category
+select concat (coalesce(first_name,"")," ",coalesce(last_name,""))as full_name,
+count(order_id)as total_order,
+count(category) as total_categories
+from sales as s
+join customer as c
+on s.customer_id=c.cust_id
+join product as p
+on s.prod_id = p.prod_id
+group by full_name
+having total_categories > 1;
+
+-- 41)display each product name , categories , unit price and total quantity sold
+select prod_name,category,unit_price,sum(quantity) as total_quantity
+from product as p
+join sales as s
+on p.prod_id = s.prod_id
+group by prod_name;
+
+-- 42)identify product that have never been sold
+select prod_name ,sum(quantity) as total_quantity
+from product as p
+join sales as s
+on p.prod_id = s.prod_id
+group by prod_name
+having total_quantity is null;
+
+-- 43)find the most frequently sold product based in total_quantity
+select prod_name,category,unit_price,sum(quantity) as total_quantity
+from sales as p
+join customer as s
+on p.prod_id=s.prod_id
+join sales as s
+on p.prod_id = s.prod_id
+group by prod_name
+order by total_quantity desc limit  1;
+
+-- 44)identify the product generting the highest total profit
+SELECT p.prod_name,SUM(s.profit) AS total_profit
+FROM product AS p
+JOIN sales AS s
+ON p.prod_id = s.prod_id
+GROUP BY p.prod_id, p.prod_name
+ORDER BY total_profit DESC
+limit 1;
+
+-- 45)find the product whose unit price greater than the average price of all product
+SELECT prod_name, unit_price
+FROM product
+WHERE unit_price > (
+SELECT AVG(unit_price)
+FROM product
+);
+
+-- 46)calculate the revenue contribution of each product category as a percentage of total revenue
+select category,round(sum(sales*quantity)/346300,2)*100 as revenue_percentage
+from product as p
+join sales as s
+on p.prod_id = s.prod_id
+group by category;
+
+-- 47)find products that generate revenue below the average product reveneue
+select prod_name,sum(sales*quantity)as total_revenue
+from product as p
+join sales as s
+on p.prod_id=s.prod_id
+group by prod_name
+having total_revenue < (select avg(sales*quantity) from sales);
+
+-- 48)identify the top three products based on total quantity sold
+select prod_name,category,unit_price,sum(quantity) as total_quantity
+from product as p
+join sales as s
+on p.prod_id=s.prod_id
+group by prod_name
+order by total_quantity desc limit  3;
