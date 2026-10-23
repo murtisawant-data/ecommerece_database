@@ -636,7 +636,96 @@ where payment_status='failed'
 group by payment_status;
 
 -- 68\. Compare total sales revenue with total completed payments.
+select(select sum(sales*quantity) from sales) as total_revenue,
+(select sum(payment_amount) as total_amount 
+from payment
+ where payment_status= 'completed') as total_completed_payments;
 
 -- 69\. Calculate the success rate of payments.
-
+select count(*) as total_transactions,
+sum(case 
+when payment_status='completed' then 1 else 0 end) as successful_transactions,
+round(100*sum(case
+when payment_status='completed' then 1 else 0 end) /nullif(count(*),0),2) as payment_success_rate
+from payment;
 -- 70\. Identify orders where the payment amount differs from the corresponding sales amount.
+create view sales_by_order as 
+select order_id,sum(sales) as total_sales 
+from sales
+group by order_id;
+
+create view payment_by_order as
+select order_id,sum(payment_amount) as total_amount
+from payment
+group by order_id;
+
+select s.order_id,s.total_sales,p.total_amount
+from sales_by_orders as s
+join payment_by_order as p
+on s.order_id=p.order_id
+where s.total_sales<>p.total_amount;
+with sales_total as (select
+order_id, sum(sales) as total_sales
+from sales
+group by order_id),
+payment_total as (select order_id,sum(payment_amount) as total_amount
+from payment
+group by order_id)
+select s.order_id,s.total_sales,p.total_amount from sales_total as s
+join payment_total as p
+on s.order_id=p.order_id
+where s.total_sales<> p.total_amount;
+
+-- 71\. Rank products based on total revenue using `RANK()`.
+select c.cust_id,first_name,last_name,sum(sales*quantity) as total_revenue,
+rank() over (order by sum(sales*quantity)desc) as revenue_rank
+from customer as c
+join sales as s
+on c.cust_id=s.customer_id
+group by c.cust_id;
+-- rank skios the value
+-- 72\. Rank customers based on their total sales using `DENSE_RANK()`.
+select c.cust_id,first_name,last_name,sum(sales) as total_sales,
+dense_rank() over (order by sum(sales)desc) as revenue_rank
+from customer as c
+join sales as s
+on c.cust_id=s.customer_id
+group by c.cust_id;
+-- dense dont skip the values
+-- 73\. Calculate cumulative daily revenue using a window function.
+select order_date,
+sum(sales*quantity)over (order by order_date) as cumulative_revenue
+from sales;
+
+-- 74\. Calculate the month-to-date sales revenue.
+select sum(sales) as MTD_revenue
+from sales
+where order_date >= date_format(curdate(),'%Y-%M-01')
+and order_date<curdate() + interval 1 day;
+
+-- 75\. Find each product's percentage contribution to total revenue.
+create view prod_revenue as
+select prod_name, sum(sales*quantity) as total_revenue
+from sale as s
+join product as p
+on p.prod_id=s.prod_id
+group by prod_name;
+
+select prod_name, total_revenue,
+round(total_revenue * 100/sum(total_revenue) over (),2) as revenue_percentage
+from prod_revenue;
+
+-- 76\. Identify customers whose total spending is above the average customer spending.
+select * from customer
+where cust_id in
+(select cust_id from sales where sales >
+(select avg(sales) from sales));
+
+-- 77\. Find the second-highest-revenue product.
+
+
+78\. Calculate the difference between each day's revenue and the previous day's revenue using `LAG()`.
+
+79\. Identify the top-performing product in each category.
+
+80\. Calculate the running total of profit ordered by sale date.
